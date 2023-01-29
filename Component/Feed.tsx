@@ -1,41 +1,102 @@
-import { useEffect, useState } from "react";
-import { View, StyleSheet, Text } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ScrollView, Text, View } from "react-native";
+import { RollType } from "../types/types";
 import { cloneDeep } from "../util/tools";
 
 type IProps = {
-  nextString?: string;
-  setMsg: (to: string | undefined) => void;
-  maxLines?: number;
+  rollState?: RollType;
 };
-const Feed = (props: IProps) => {
-  const { nextString, setMsg, maxLines = 24 } = props;
-  const [feedList, setFeedList] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (nextString) {
-      feedList.push(nextString);
+type feedType = { type: "roll"; payload: RollType };
+
+const MAX_ELEMENTS = 30;
+
+const Feed = (props: IProps) => {
+  const { rollState } = props;
+  const [feedList, setFeedList] = useState<feedType[]>([]);
+  const pushToFeedList = useCallback(
+    (toPush: feedType) => {
+      feedList.push(toPush);
       setFeedList(
         cloneDeep(
-          feedList.slice(feedList.length > maxLines - 1 ? 1 : 0, maxLines)
+          feedList.slice(
+            feedList.length > MAX_ELEMENTS - 1 ? 1 : 0,
+            MAX_ELEMENTS
+          )
         )
       );
-      setMsg(undefined);
+    },
+    [feedList]
+  );
+
+  useEffect(() => {
+    if (rollState) {
+      pushToFeedList({ type: "roll", payload: rollState });
     }
-  }, [nextString, feedList, setFeedList]);
+  }, [rollState]);
 
   return (
-    <View style={{ backgroundColor: "lightgrey", height: "100%" }}>
-      {feedList.map((v, i) => (
-        <Text key={i}>{v}</Text>
-      ))}
-    </View>
+    <ScrollView style={{ backgroundColor: "lightgrey", height: "100%" }}>
+      {feedList.map((v, i) => {
+        if (v.type === "roll") {
+          return (
+            <View key={i} style={{ flexDirection: "row" }}>
+              <View style={{ width: "50%", flexDirection: "row" }}>
+                {v.payload.atk.map((v, i) => (
+                  <Text
+                    key={i}
+                    style={{
+                      textDecorationLine: v.defeated ? "line-through" : "none",
+                      color: v.active ? "red" : "grey",
+                      fontFamily: "Times New Roman",
+                      fontSize: 20,
+                    }}
+                  >{`${v.value} `}</Text>
+                ))}
+                {v.payload.def.map((v, i) => (
+                  <Text
+                    key={i}
+                    style={{
+                      textDecorationLine: v.defeated ? "line-through" : "none",
+                      color: v.active ? "blue" : "grey",
+                      fontFamily: "Times New Roman",
+                      fontSize: 20,
+                    }}
+                  >
+                    {`${v.value} `}
+                  </Text>
+                ))}
+              </View>
+              <View style={{ width: "25%", flexDirection: "row" }}>
+                {v.payload.numAtkDefeated !== 0 && (
+                  <Text
+                    style={{
+                      color: "red",
+                      fontFamily: "Times New Roman",
+                      fontSize: 20,
+                    }}
+                  >
+                    {` (-${v.payload.numAtkDefeated})`}
+                  </Text>
+                )}
+              </View>
+              {v.payload.numDefDefeated !== 0 && (
+                <Text
+                  style={{
+                    color: "blue",
+                    fontFamily: "Times New Roman",
+                    fontSize: 20,
+                  }}
+                >
+                  {` (-${v.payload.numDefDefeated})`}
+                </Text>
+              )}
+            </View>
+          );
+        }
+      })}
+    </ScrollView>
   );
 };
 
 export default Feed;
-
-const styles = StyleSheet.create({
-  number: {
-    color: "red",
-  },
-});

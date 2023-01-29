@@ -1,21 +1,46 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Button, StyleSheet, Text, View } from "react-native";
-import DisplayNumber from "../Component/DisplayNumber";
+import DisplayNumber from "../Component/MessageDisplay";
 import Feed from "../Component/Feed";
 import ScrollWheel from "../Component/ScrollWheel";
-import { screenType } from "../types/types";
-import { rollDie } from "../util/math";
+import { RollType, ScreenType } from "../types/types";
+import { battle, rollDie } from "../util/math";
+import MessageDisplay from "../Component/MessageDisplay";
 
 type IProps = {
-  setScreen: (to: screenType) => void;
+  setScreen: (to: ScreenType) => void;
 };
 
 const MainView = (props: IProps) => {
   const { setScreen } = props;
 
-  const [atk, setAtk] = useState(0);
-  const [def, setDef] = useState(0);
-  const [msg, setMsg] = useState<string | undefined>(undefined);
+  const [atk, setAtk] = useState(1);
+  const [def, setDef] = useState(1);
+  const [scrollToValue, setScrollToValue] = useState<
+    { atk: number; def: number } | undefined
+  >(undefined);
+  const [roll, setRoll] = useState<RollType | undefined>(undefined);
+
+  const fightABattle = useCallback(() => {
+    if (atk > 0 && def > 0) {
+      const roll = battle(atk > 3 ? 3 : atk, def > 2 ? 2 : def);
+      setRoll(roll);
+      setAtk(atk - roll.numAtkDefeated);
+      setDef(def - roll.numDefDefeated);
+      setScrollToValue({
+        atk: atk - roll.numAtkDefeated,
+        def: def - roll.numDefDefeated,
+      });
+    }
+    return atk === 0 || def === 0;
+  }, [setRoll, setAtk, setDef, setScrollToValue, atk, def]);
+
+  const fightAWar = useCallback(() => {
+    let done = false;
+    while (!done) {
+      done = fightABattle();
+    }
+  }, [fightABattle]);
 
   return (
     <View style={{ width: "100%" }}>
@@ -31,31 +56,35 @@ const MainView = (props: IProps) => {
           <Button title="about" onPress={() => setScreen("about")} />
         </View>
       </View>
-      <View style={styles.numbers}>
-        <DisplayNumber which="ATK" count={atk} />
-        <DisplayNumber which="DEF" count={def} />
+      <View style={styles.message}>
+        <MessageDisplay rollState={roll} />
       </View>
       <View style={styles.background}>
-        <View style={{ height: "65%", flexDirection: "row" }}>
+        <View style={{ height: 420, flexDirection: "row" }}>
           <View style={[{ width: "25%" }, styles.section]}>
-            <ScrollWheel value={atk} setValue={setAtk} />
+            <ScrollWheel
+              player={"ATK"}
+              scrollToValue={scrollToValue?.atk}
+              setNum={setAtk}
+            />
           </View>
           <View style={[{ width: "50%" }, styles.section]}>
-            <Feed nextString={msg} setMsg={setMsg} />
+            <Feed rollState={roll} />
           </View>
           <View style={[{ width: "25%" }, styles.section]}>
-            <ScrollWheel value={def} setValue={setDef} />
+            <ScrollWheel
+              player={"DEF"}
+              scrollToValue={scrollToValue?.def}
+              setNum={setDef}
+            />
           </View>
         </View>
-        <View style={{ height: "35%", backgroundColor: "red" }}>
+        <View style={{ height: 260, backgroundColor: "red" }}>
           <View style={styles.button}>
-            <Button
-              title="Roll"
-              onPress={() => setMsg("" + rollDie())}
-            ></Button>
+            <Button title="Roll" onPress={fightABattle}></Button>
           </View>
           <View style={styles.button}>
-            <Button title="Roll Until Done"></Button>
+            <Button title="Roll Until Done" onPress={fightAWar}></Button>
           </View>
           <View style={styles.button}>
             <Button title="Analyze"></Button>
@@ -68,7 +97,7 @@ const MainView = (props: IProps) => {
 
 const styles = StyleSheet.create({
   banner: {
-    height: "10%",
+    height: 90,
     backgroundColor: "black",
     alignItems: "center",
     justifyContent: "center",
@@ -77,13 +106,13 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 27,
   },
-  numbers: {
-    height: "10%",
+  message: {
+    height: 90,
     backgroundColor: "grey",
     flexDirection: "row",
   },
   background: {
-    height: "80%",
+    height: "100%",
     backgroundColor: "grey",
   },
   section: {
