@@ -68,6 +68,7 @@ export function battle(atk: number, def: number): RollType {
     def: defDice.sort(() => Math.random() - 0.5),
     numAtkDefeated: numAtkDefeated,
     numDefDefeated: numDefDefeated,
+    balance: numAtkDefeated - numDefDefeated,
     timeStamp: Date.now(),
   };
 }

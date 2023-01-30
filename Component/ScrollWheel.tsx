@@ -24,7 +24,7 @@ const ScrollPicker = (props: IProps) => {
     if (mustScroll !== scrollToValue) {
       setMustScroll(scrollToValue);
     }
-  }, [scrollToValue, mustScroll]);
+  }, [scrollToValue, setMustScroll, mustScroll, player]);
 
   return (
     <View style={{ height: 420, backgroundColor: "white" }}>
@@ -42,7 +42,7 @@ const ScrollPicker = (props: IProps) => {
         bounces={false}
         contentOffset={{
           x: 0,
-          y: SCROLL_INTERVAL * (ENTRIES - (mustScroll ?? 0)),
+          y: SCROLL_INTERVAL * (ENTRIES - (mustScroll ?? 1)),
         }}
       >
         {values.map((item, i) => {

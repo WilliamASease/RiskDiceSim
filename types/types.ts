@@ -7,6 +7,8 @@ export type RollType = {
   def: DieType[];
   numAtkDefeated: number;
   numDefDefeated: number;
+  balance: number;
   timeStamp?: number;
 };
-export type MessageType = { message: string; color: "red" | "blue" };
+export type MessageType = { message: MessageComponent[]; timeStamp:number };
+export type MessageComponent = {value:string, color:string}

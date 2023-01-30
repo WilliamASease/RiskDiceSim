@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
-import { RollType } from "../types/types";
+import { MessageType, RollType } from "../types/types";
 import { cloneDeep } from "../util/tools";
 
 type IProps = {
   rollState?: RollType;
+  message?: MessageType;
 };
 
-type feedType = { type: "roll"; payload: RollType };
+type feedType =
+  | { type: "roll"; payload: RollType }
+  | { type: "message"; payload: MessageType };
 
-const MAX_ELEMENTS = 30;
+const MAX_ELEMENTS = 100;
 
 const Feed = (props: IProps) => {
-  const { rollState } = props;
+  const { rollState, message } = props;
+  const [offSet, setOffset] = useState(0);
   const [feedList, setFeedList] = useState<feedType[]>([]);
   const pushToFeedList = useCallback(
     (toPush: feedType) => {
@@ -25,8 +29,9 @@ const Feed = (props: IProps) => {
           )
         )
       );
+      setOffset(offSet + 35);
     },
-    [feedList]
+    [feedList, setOffset, offSet]
   );
 
   useEffect(() => {
@@ -35,8 +40,18 @@ const Feed = (props: IProps) => {
     }
   }, [rollState]);
 
+  useEffect(() => {
+    if (message) {
+      pushToFeedList({ type: "message", payload: message });
+    }
+  }, [message]);
+
   return (
-    <ScrollView style={{ backgroundColor: "lightgrey", height: "100%" }}>
+    <ScrollView
+      style={{ backgroundColor: "lightgrey", height: 420 }}
+      snapToInterval={35}
+      contentOffset={{ x: 0, y: offSet }}
+    >
       {feedList.map((v, i) => {
         if (v.type === "roll") {
           return (
@@ -67,30 +82,44 @@ const Feed = (props: IProps) => {
                   </Text>
                 ))}
               </View>
-              <View style={{ width: "25%", flexDirection: "row" }}>
-                {v.payload.numAtkDefeated !== 0 && (
-                  <Text
-                    style={{
-                      color: "red",
-                      fontFamily: "Times New Roman",
-                      fontSize: 20,
-                    }}
-                  >
-                    {` (-${v.payload.numAtkDefeated})`}
-                  </Text>
-                )}
-              </View>
-              {v.payload.numDefDefeated !== 0 && (
+              <View style={{ width: "50%", flexDirection: "row" }}>
                 <Text
                   style={{
-                    color: "blue",
+                    color:
+                      v.payload.balance > 0
+                        ? "blue"
+                        : v.payload.balance === 0
+                        ? "black"
+                        : "red",
                     fontFamily: "Times New Roman",
                     fontSize: 20,
                   }}
                 >
-                  {` (-${v.payload.numDefDefeated})`}
+                  {Math.abs(v.payload.balance) === 2
+                    ? "WIN x2"
+                    : Math.abs(v.payload.balance) === 1
+                    ? "WIN"
+                    : "EVEN"}
                 </Text>
-              )}
+              </View>
+            </View>
+          );
+        }
+        if (v.type === "message") {
+          return (
+            <View key={i} style={{ flexDirection: "row" }}>
+              {v.payload.message.map((t, i) => (
+                <Text
+                  key={i}
+                  style={{
+                    color: t.color,
+                    fontFamily: "Times New Roman",
+                    fontSize: 20,
+                  }}
+                >
+                  {t.value + " "}
+                </Text>
+              ))}
             </View>
           );
         }
